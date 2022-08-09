@@ -221,7 +221,7 @@ def main():
         print("\nOutput successfully binarized")
         out_name += "_bin"
 
-    print(f"\nSaving to: {args.save_to}")
+    print(f"Saving to: {args.save_to}")
     if args.out_f:
         save_frames(out_frames, out_name, args.save_to)
     elif args.out_v:
