@@ -23,8 +23,13 @@ def parse_args():
                         required=False,
                         action="store",
                         type=int,
+                        default=None)
+    parser.add_argument("--rot",
+                        required=False,
+                        action="store",
+                        type=str,
                         default=None,
-                        metavar='')
+                        choices=["180", "90CC", "90CW"])
     parser.add_argument("--bin_otsu", required=False, action="store_true")
     parser.add_argument("--bin_trng", required=False, action="store_true")
     parser.add_argument("--save_in", required=False, action="store_true")
@@ -116,6 +121,11 @@ def save_frames(frames, fname, path):
 
 def main():
     is_color = True
+    rots = {
+        "180": cv2.ROTATE_180,
+        "90CC": cv2.ROTATE_90_COUNTERCLOCKWISE,
+        "90CW": cv2.ROTATE_90_CLOCKWISE
+    }
     args = parse_args()
 
     if args.vid is None and args.ims is None:
@@ -136,20 +146,20 @@ def main():
     elif args.ims is not None:
         checkpath(args.ims)
         src_frames, instance_name = from_frames(args.ims)
-    
+
         if args.fps is not None and args.out_v is True:
             print(f"Output video will be saved with specified fps: {args.fps}")
             fps = args.fps
             if args.save_in:
                 print("Saving original video from frames")
                 save_video(src_frames, fps, True, "input_from_frames",
-                            args.save_to)
+                           args.save_to)
         else:
-            print("\nForgot to specify FPS")
+            print("Forgot to specify FPS")
             args.out_v, args.out_f = False, True
-            
+
     out_name = f"{instance_name}_bg_remove"
-    
+
     if args.out_f:
         print("Output will be saved as individual frames")
 
@@ -167,9 +177,12 @@ def main():
     for frame in src_frames:
         if n >= args.med_n:
             prev_frames = np.array(
-                list(src_frames[y] for y in range(n, n - args.med_n, -1)))
+                list(src_frames[y]
+                     for y in range(n - 1, n - args.med_n - 1, -1)))
             bg = estimate_background(prev_frames)
         out_frame = cv2.absdiff(frame, bg)
+        if args.rot is not None:
+            out_frame = cv2.rotate(out_frame, rots[args.rot])
         out_frames.append(out_frame)
         sys.stdout.write(f"\rProcessed frame {n+1} of {len(src_frames)}")
         sys.stdout.flush()
@@ -206,6 +219,7 @@ def main():
 
     if not is_color:
         print("\nOutput successfully binarized")
+        out_name += "_bin"
 
     print(f"\nSaving to: {args.save_to}")
     if args.out_f:
