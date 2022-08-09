@@ -58,7 +58,7 @@ def from_video(path):
         else:
             break
     cap.release()
-    return frames, fps
+    return frames, fps, filename.split(".")[0]
 
 
 def from_frames(path):
@@ -73,7 +73,7 @@ def from_frames(path):
             frames.append(cv2.imread(fpath))
         except:
             print(f"Error when reading file {fpath} as image")
-    return frames
+    return frames, dirname
 
 
 def save_video(frames, fps, is_color, fname, path):
@@ -131,22 +131,25 @@ def main():
 
     if args.vid is not None:
         checkpath(args.vid)
-        src_frames, fps = from_video(args.vid)
+        src_frames, fps, instance_name = from_video(args.vid)
 
     elif args.ims is not None:
         checkpath(args.ims)
-        src_frames = from_frames(args.ims)
-
+        src_frames, instance_name = from_frames(args.ims)
+    
         if args.fps is not None and args.out_v is True:
             print(f"Output video will be saved with specified fps: {args.fps}")
             fps = args.fps
             if args.save_in:
                 print("Saving original video from frames")
                 save_video(src_frames, fps, True, "input_from_frames",
-                           args.save_to)
+                            args.save_to)
         else:
             print("\nForgot to specify FPS")
             args.out_v, args.out_f = False, True
+            
+    out_name = f"{instance_name}_bg_remove"
+    
     if args.out_f:
         print("Output will be saved as individual frames")
 
@@ -204,11 +207,11 @@ def main():
     if not is_color:
         print("\nOutput successfully binarized")
 
-    print(f"Saving to: {args.save_to}")
+    print(f"\nSaving to: {args.save_to}")
     if args.out_f:
-        save_frames(out_frames, "output_frames_bg_remove", args.save_to)
+        save_frames(out_frames, out_name, args.save_to)
     elif args.out_v:
-        save_video(out_frames, fps, is_color, "output_bg_remove", args.save_to)
+        save_video(out_frames, fps, is_color, out_name, args.save_to)
 
 
 if __name__ == '__main__':
